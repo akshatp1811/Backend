@@ -2,9 +2,10 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
   },
   "repository": {
     "type": "git",
@@ -15,14 +16,5 @@
   "bugs": {
     "url": "https://github.com/akshatp1811/Backend/issues"
   },
-  "homepage": "https://github.com/akshatp1811/Backend#readme",
-  "devDependencies": {
-    "nodemon": "^3.1.10"
-  },
-  "dependencies": {
-    "dotenv": "^17.2.2",
-    "express": "^5.1.0",
-    "mongoose": "^8.18.2",
-    "prettier": "^3.6.2"
-  }
+  "homepage": "https://github.com/akshatp1811/Backend#readme"
 }
