@@ -16,5 +16,10 @@
   "bugs": {
     "url": "https://github.com/akshatp1811/Backend/issues"
   },
-  "homepage": "https://github.com/akshatp1811/Backend#readme"
+  "homepage": "https://github.com/akshatp1811/Backend#readme",
+  "dependencies": {
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "mongoose": "^8.18.2"
+  }
 }
