@@ -10,11 +10,8 @@ connectDB()
 
 })
 .catch((err) => {
-    console.log("MONGODB Connection failed !!",err);
-    
+    console.log("MONGODB Connection failed !!",err);    
 })
-
-
 dotenv.config({
     path:'./env'
 })
