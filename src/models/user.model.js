@@ -48,15 +48,14 @@ const userSchema = new Schema({
     },
     {
         timestamps: true
-    }
- 
+    } 
 )
 userSchema.pre("save", async function (next) {//Arrow function is not passed directly as callback because it does not has the context of this
 //in middle ware next is passed and then called to move to thext tasks
     if(!this.isModified("password")){
         return next()
     }
-    this.password = bcrypt.hash(this.password, 10)
+    this.password = await bcrypt.hash(this.password, 10)
     next()
 })
 
