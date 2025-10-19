@@ -4,7 +4,7 @@ import { user } from "../models/user.model.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
-const generateAccessAndRefreshTokens = async UserActivation.findById(userId){
+const generateAccessAndRefreshTokens = async(userId) => {
     try{
         const user = await UserActivation.findById(userId)
         //Generating Both Tokes
@@ -17,7 +17,7 @@ const generateAccessAndRefreshTokens = async UserActivation.findById(userId){
 
         return {accessToken, refreshToken}
 
-    }catch (error){
+        }catch (error){
         throw new ApiError(500 , "Something went wrong while generating refresh and access token")
     }
 }
@@ -107,7 +107,7 @@ const loginUser = asyncHandler(async (req,res) => {
         throw new ApiError(400, "Username or Password is required ")
     }
     //Finding the User on the basis of username or email
-    //$or or other keywords are used for DB Queries and findOne is used to find the first fielf in the DB with the field in the parenthesis
+    //$or or other keywords are used for DB Queries and findOne is used to find the first field in the DB with the field in the parenthesis
 
     const user = await UserActivation.findOne({
         $or: [{username},{email}]
@@ -122,36 +122,60 @@ const loginUser = asyncHandler(async (req,res) => {
     if(!isPasswordValid){
         throw new ApiError(401, "Invalid user Credentials")
     }
+    //Generating access and refresh tokens and storing them as an object.
+    const {acccessToken, refreshToken} = await generateAccessAndRefreshTokens(user._id)
+
+    //Getting the values of the logged in user and storing it in loggedInUser
+    const loggedInUser = await UserActivation.findById(user._id).select("-password -refreshToken ")
+
+    //Sending as cookie
+    const options = {
+        httpOnly: true, // Without httpOnly the cookie can be modified by frontend as well but by httpOnly it doesn't
+        secure: true
+    }
+    return res.status(200).cookie("accessToken",accessToken,options)
+    .cookie("refreshToken", refreshToken, options)//sending response as cookie
+    .json(//Sending response as json
+        new ApiResponse(
+            200,
+            {
+                user: loggedInUser, accessToken, 
+                refreshToken
+            },
+            "User logged in Successfully"
+        )
+
+    )
 })
+const logoutUser = asyncHandler(async(req,res) => {
+    // Clear Cookies and Access and Refresh Tokens
+    // Problem-> How can we find the user when we cannot take email Id / password from the user as we do not have to make the user to fill the form.
+    // We have to design a middleware to implement it.
+    UserActivation.findbyIdAndUpdate(
+        req.user._id,
+        {   //Clearing AccessToken from DB
+            $set: {
+                refreshToken: undefined
+            }
+        },
+            {
+                new: true
+            }
+    )
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+    
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged Out Successfully"))
+} )
 
 export { registerUser,
-        loginUser
+        loginUser,
+        logoutUser
  };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

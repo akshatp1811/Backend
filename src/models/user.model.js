@@ -51,7 +51,7 @@ const userSchema = new Schema({
     } 
 )
 userSchema.pre("save", async function (next) {//Arrow function is not passed directly as callback because it does not has the context of this
-//in middle ware next is passed and then called to move to thext tasks
+//in middle ware next is passed and then called to move to the next tasks
     if(!this.isModified("password")){
         return next()
     }
