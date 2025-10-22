@@ -1,17 +1,19 @@
 //Verifies if the user is present or not?
 
-import { ApiError } from "../utils/apiError";
-import { asyncHandler } from "../utils/asyncHandler";
-import { jwt } from "jsonwebtoken";
+import { ApiError } from "../utils/apiError.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import jwt from "jsonwebtoken"
 export const verifyJWT = asyncHandler(async(req, res, 
     next) => {
         try {
-            const token = req.cookies?.accessToken || req.header("Authorization")?replace("Bearer ", "")
+            const token = req.cookies?.accessToken || (req.header("Authorization") && req.header("Authorization").replace("Bearer ", ""));
+
+            // const token = req.cookies?.accessToken || req.header("Authorization")?replace("Bearer ", "")
             //We use "?" because it is possible that the access token is not in cookie but in header
             //In Header we send it as Authorization: Bearer <token>
     
             if(!token){
-                throw new ApiError(401,"Unauthorized request");
+                throw new ApiErrorpiError(401,"Unauthorized request");
             }
             jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
     
