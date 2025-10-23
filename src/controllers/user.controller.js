@@ -147,6 +147,7 @@ const loginUser = asyncHandler(async (req,res) => {
 
     )
 })
+
 const logoutUser = asyncHandler(async(req,res) => {
     // Clear Cookies and Access and Refresh Tokens
     // Problem-> How can we find the user when we cannot take email Id / password from the user as we do not have to make the user to fill the form.
@@ -174,7 +175,6 @@ const logoutUser = asyncHandler(async(req,res) => {
     .clearCookie("refreshToken", options)
     .json(new ApiResponse(200, {}, "User logged Out Successfully"))
 } )
-
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
@@ -221,8 +221,143 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
    }
 })
 
+const changeCurrentPassword = asyncHandler(async(req,
+    res) => {
+        //We Dont have to check weather the user is logged in or not etc. we have middleware for that
+        const {oldPassword, newPassword} = req.body
+        //If auth.middleware has runned successfully then req.user will give the user id
+        const user = await UserActivation.findById(req.user?._id)
+        //Check if the old password entered is correct or not.
+        const isPasswordCorrect =  await user.isPasswordCorrect(oldPassword)
+        
+        //If Password is not correct
+        if(!isPasswordCorrect){
+            throw new ApiError(400, "Invalid old password")
+        }
+        user.password = newPassword
+        // userSchema.pre("save", async function (next) {
+        //     if(!this.isModified("password")){
+        //         return next()
+        //     }
+        //     this.password = await bcrypt.hash(this.password, 10)
+        //     next()
+        // })
+
+        //This is a snippet from user.model.js if password is modified it will be again decrypted here and hashed.
+
+        await user.save({validateBeforeSave: false})
+        //no other valdidation is required after the password is changed.
+
+        return res
+        .status(200)
+        .json(new ApiResponse(200, {}, "Password changed successfully"))
+    }
+)
+
+const getCurrentUser = asyncHandler (async(req,res) => {
+    return res
+    .status(200)
+    .json(200 , req.user , "current user fetched successfully")
+})
+
+const updateAccountDetails = asyncHandler(async(req,
+    res) => {
+        const {fullName,email} = req.body 
+        // within the curly braces write the parameters that you want to change.
+
+        if(!fullName || !email){
+            throw new ApiError(400, "All Fields are Required")
+        }
+
+        //To Find the user First Step: FInd the user
+        const user = User.findByIdAndUpdate(
+            req.user?.id,
+            {
+                $set: {
+                    fullName: fullName,
+                    email: email
+                }
+            },
+            {new: true} // if new is true then the information is returned after getting updated
+        ).select("-password")
+
+        return res
+        .status(200)
+        .json(new ApiResponse(200, user, "Account details updated successfully"))
+
+    }
+) 
+//Multer to accept file
+//Only those update who are logged in
+const updateUserAvatar = asyncHandler(async(req, res) => {
+    const avatarLocalPath = req.file?.path
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar File is missing")
+    }
+    const avatar = uploadOnCloudinary(avatarLocalPath)
+
+    if(!avatar.url){
+        throw new ApiError(400, "Error while uploading Avatar")
+    }
+
+    await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            //After uploading on cloudinary we get the link of cloudinary 
+            $set:{
+                avatar: avatar.url
+            }
+        },
+        {new: true}//Gives the changed response
+    ).select("-password")
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, user , "Avatar Image updated successfully")
+    )
+}
+)
+
+const updateUserCoverImage = asyncHandler(async(req, res) => {
+    const coverImageLocalPath = req.file?.path
+    if (!coverImageLocalPath) {
+        throw new ApiError(400, "Cover Image is missing")
+    }
+    const coverImage = uploadOnCloudinary(coverImageLocalPath)
+
+    if(!coverImage.url){
+        throw new ApiError(400, "Error while uploading Cover Image")
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            //After uploading on cloudinary we get the link of cloudinary 
+            $set:{
+                coverImage: coverImage.url
+            }
+        },
+        {new: true}//Gives the changed response
+    ).select("-password")
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, user , "Cover Image updated successfully")
+    )
+    
+}
+)
+
+
 export { registerUser,
         loginUser,
         logoutUser,
-        refreshAccessToken
+        refreshAccessToken,
+        changeCurrentPassword,
+        getCurrentUser,
+        updateAccountDetails,
+        updateUserAvatar,
+        updateUserCoverImage
  };
