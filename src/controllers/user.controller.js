@@ -287,8 +287,10 @@ const updateAccountDetails = asyncHandler(async(req,
 
     }
 ) 
+
 //Multer to accept file
 //Only those update who are logged in
+
 const updateUserAvatar = asyncHandler(async(req, res) => {
     const avatarLocalPath = req.file?.path
     if (!avatarLocalPath) {
@@ -350,6 +352,83 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
 }
 )
 
+const getUserChannelProfile = asyncHandler(async(req,
+    res) => {
+      //When we visit a channel we go through the url like host.com/user so we can extract the user na,e from params.
+      const {username} = req.params
+      //Check if user name is present or not.
+      if (!username?.trim()){
+        throw new ApiError(400, "Username is missing")
+      }
+      //Aggregation Pipelines
+      const channel = await User.aggregate([
+        {
+            $match: {
+                username: username?.toLowerCase()
+            }
+        },//Now we have one user (i.e. we have filtered out one user from the DB) Now we have to lookup to find the number of subscriber
+            {
+                $lookup:{
+                    from: "subscriptions",
+                    localField: "_id",
+                    foreignField: "channel",
+                    as: "subscribers"
+                }
+            },
+            {
+                //Finding the number of channels I have subscribed
+                $lookup:{
+                    from: "subscriptions",
+                    localField: "_id",
+                    foreignField: "subscriber",
+                    as: "subscribedTo"
+                }
+            },
+            {
+                $addFields:{
+                    subscribersCount:{
+                        //To count we have a size function
+                        $size: "$subscribers"
+                    },
+                    channelsSubscribedToCount: {
+                        $size: "$subscribedTo"
+                    },
+                    isSubscribed: {//Checking if the channel is subscribed or not
+                        $cond: {
+                            if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                            then: true,
+                            else: false
+                        }
+                    }
+                }
+            },
+            {//To control which values are passed and which are not
+                $project: {
+                    fullName: 1,
+                    username: 1,
+                    subscribersCount: 1,
+                    channelSubscribedToCount: 1,
+                    avatar: 1,
+                    coverImage: 1,
+                    email: 1
+                }
+            }
+    ])
+
+    if(!channel?.length){
+        throw new ApiError(404, "channel Does not Exist")
+    }
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(200, channel[0], "User Channel Fetched Successfully")
+    )
+
+
+})
+
+
+//ToDo: Delete the old Avatar image by giving its url and changing it to the new URL
 
 export { registerUser,
         loginUser,
@@ -360,4 +439,6 @@ export { registerUser,
         updateAccountDetails,
         updateUserAvatar,
         updateUserCoverImage
- };
+};
+
+
